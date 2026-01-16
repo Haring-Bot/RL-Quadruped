@@ -1,0 +1,743 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="Full_robot_urdf">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.0284130316166329 0 -0.037055289412498"
+        rpy="0 0 0" />
+      <mass
+        value="26.5470635630031" />
+      <inertia
+        ixx="0.146794905291758"
+        ixy="1.63338502818567E-16"
+        ixz="-0.00569598484228597"
+        iyy="0.547039589773236"
+        iyz="1.08207180453233E-17"
+        izz="0.653896621352249" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="Shoulder1_link">
+    <inertial>
+      <origin
+        xyz="0.0425232933845158 -0.000261252925516098 0.0234811427090857"
+        rpy="0 0 0" />
+      <mass
+        value="0.446431851564578" />
+      <inertia
+        ixx="0.000346699615288805"
+        ixy="2.03833673178776E-06"
+        ixz="-0.000113625282898098"
+        iyy="0.000533711748532718"
+        iyz="7.60304933744619E-07"
+        izz="0.00068393682667711" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Shoulder1_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Shoulder1_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Shoulder1_joint"
+    type="revolute">
+    <origin
+      xyz="-0.20313 0.125 -0.055"
+      rpy="3.1416 0 1.5423" />
+    <parent
+      link="base_link" />
+    <child
+      link="Shoulder1_link" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="2.09"
+      upper="3.66"
+      effort="10"
+      velocity="4" />
+  </joint>
+  <link
+    name="Waist1_link">
+    <inertial>
+      <origin
+        xyz="0.0725080394079287 7.7715611723761E-15 -0.0124999999999997"
+        rpy="0 0 0" />
+      <mass
+        value="0.591365572491094" />
+      <inertia
+        ixx="0.000192326305141676"
+        ixy="-6.98802181484798E-19"
+        ixz="-6.81861522539712E-20"
+        iyy="0.00305489019743548"
+        iyz="-2.11758236813575E-20"
+        izz="0.00320512013282677" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Waist1_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Waist1_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Waist1_joint"
+    type="revolute">
+    <origin
+      xyz="0.06 -0.0125 0.03"
+      rpy="1.5708 0.056944 0" />
+    <parent
+      link="Shoulder1_link" />
+    <child
+      link="Waist1_link" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="0"
+      upper="1.22"
+      effort="10"
+      velocity="4" />
+  </joint>
+  <link
+    name="Knee1_link">
+    <inertial>
+      <origin
+        xyz="-0.0050624418008357 0.101001873832838 -0.0125000053341605"
+        rpy="0 0 0" />
+      <mass
+        value="0.215434223021017" />
+      <inertia
+        ixx="0.000815108435315712"
+        ixy="6.20387386315345E-05"
+        ixz="-7.22756824939589E-11"
+        iyy="4.3953630532163E-05"
+        iyz="7.63119432850565E-11"
+        izz="0.000832986526105727" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Knee1_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Knee1_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Knee1_joint"
+    type="revolute">
+    <origin
+      xyz="0.195 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Waist1_link" />
+    <child
+      link="Knee1_link" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="1.05"
+      upper="4.54"
+      effort="10"
+      velocity="4" />
+  </joint>
+  <link
+    name="Shoulder2_link">
+    <inertial>
+      <origin
+        xyz="0.0425232933845229 -0.000261252925515487 0.0234811427090857"
+        rpy="0 0 0" />
+      <mass
+        value="0.446431851564578" />
+      <inertia
+        ixx="0.000346699615288805"
+        ixy="2.03833673178763E-06"
+        ixz="-0.000113625282898098"
+        iyy="0.000533711748532718"
+        iyz="7.60304933744541E-07"
+        izz="0.000683936826677109" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Shoulder2_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Shoulder2_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Shoulder2_joint"
+    type="revolute">
+    <origin
+      xyz="-0.20313 -0.125 -0.055"
+      rpy="3.1416 0 -1.5058" />
+    <parent
+      link="base_link" />
+    <child
+      link="Shoulder2_link" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="2.09"
+      upper="3.66"
+      effort="10"
+      velocity="4" />
+  </joint>
+  <link
+    name="Waist2_link">
+    <inertial>
+      <origin
+        xyz="0.0724631584146513 -0.00255077465818149 -0.0125"
+        rpy="0 0 0" />
+      <mass
+        value="0.591365572491094" />
+      <inertia
+        ixx="0.000195868945386368"
+        ixy="0.000100640368381385"
+        ixz="7.85199542104736E-19"
+        iyy="0.00305134755719079"
+        iyz="-2.93141071993124E-20"
+        izz="0.00320512013282678" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Waist2_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Waist2_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Waist2_joint"
+    type="revolute">
+    <origin
+      xyz="0.06 -0.0125 0.03"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Shoulder2_link" />
+    <child
+      link="Waist2_link" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="0"
+      upper="1.22"
+      effort="10"
+      velocity="4" />
+  </joint>
+  <link
+    name="Knee2_link">
+    <inertial>
+      <origin
+        xyz="-0.00676064409002064 0.10090242766993 -0.0124999854441368"
+        rpy="0 0 0" />
+      <mass
+        value="0.215434206022005" />
+      <inertia
+        ixx="0.000812803464483711"
+        ixy="7.49730623373882E-05"
+        ixz="-7.14215684105579E-11"
+        iyy="4.62585740921012E-05"
+        iyz="3.81104825477536E-11"
+        izz="0.000832986494370386" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Knee2_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Knee2_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Knee2_joint"
+    type="revolute">
+    <origin
+      xyz="0.19488 -0.0068599 0"
+      rpy="0 0 -0.035186" />
+    <parent
+      link="Waist2_link" />
+    <child
+      link="Knee2_link" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="1.05"
+      upper="4.54"
+      effort="10"
+      velocity="4" />
+  </joint>
+  <link
+    name="Shoulder3_link">
+    <inertial>
+      <origin
+        xyz="0.042523293384519 -0.000261252925511476 0.0234811427090857"
+        rpy="0 0 0" />
+      <mass
+        value="0.446431851564578" />
+      <inertia
+        ixx="0.000346699615288805"
+        ixy="2.0383367317876E-06"
+        ixz="-0.000113625282898098"
+        iyy="0.000533711748532718"
+        iyz="7.60304933744661E-07"
+        izz="0.00068393682667711" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Shoulder3_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Shoulder3_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Shoulder3_joint"
+    type="revolute">
+    <origin
+      xyz="0.19187 -0.125 -0.055"
+      rpy="3.1416 0 -1.5761" />
+    <parent
+      link="base_link" />
+    <child
+      link="Shoulder3_link" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="2.09"
+      upper="3.66"
+      effort="10"
+      velocity="4" />
+  </joint>
+  <link
+    name="Waist3_link">
+    <inertial>
+      <origin
+        xyz="0.0725080254304402 -2.81011075520254E-10 -0.0125000005523184"
+        rpy="0 0 0" />
+      <mass
+        value="0.591365572491093" />
+      <inertia
+        ixx="0.000192326305141675"
+        ixy="-6.62177791440656E-12"
+        ixz="-1.35847402098527E-11"
+        iyy="0.00305489019743547"
+        iyz="-2.81395044692189E-14"
+        izz="0.00320512013282677" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Waist3_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Waist3_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Waist3_joint"
+    type="revolute">
+    <origin
+      xyz="0.06 -0.0125 0.03"
+      rpy="1.5708 0.041517 0" />
+    <parent
+      link="Shoulder3_link" />
+    <child
+      link="Waist3_link" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="0"
+      upper="1.22"
+      effort="10"
+      velocity="4" />
+  </joint>
+  <link
+    name="Knee3_link">
+    <inertial>
+      <origin
+        xyz="-0.00760671615583863 0.100842174540015 -0.0125000055791627"
+        rpy="0 0 0" />
+      <mass
+        value="0.215434207319039" />
+      <inertia
+        ixx="0.000811491910537708"
+        ixy="8.13916830418142E-05"
+        ixz="-7.484921917098E-11"
+        iyy="4.75701291302227E-05"
+        iyz="7.70827957905519E-11"
+        izz="0.000832986495885628" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Knee3_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Knee3_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Knee3_joint"
+    type="revolute">
+    <origin
+      xyz="0.195 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Waist3_link" />
+    <child
+      link="Knee3_link" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="1.05"
+      upper="4.54"
+      effort="10"
+      velocity="4" />
+  </joint>
+  <link
+    name="Shoulder4_link">
+    <inertial>
+      <origin
+        xyz="0.0425232933845229 -0.000261252925515418 0.0234811427090856"
+        rpy="0 0 0" />
+      <mass
+        value="0.446431851564578" />
+      <inertia
+        ixx="0.000346699615288805"
+        ixy="2.03833673178753E-06"
+        ixz="-0.000113625282898098"
+        iyy="0.000533711748532718"
+        iyz="7.60304933744745E-07"
+        izz="0.000683936826677109" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Shoulder4_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Shoulder4_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Shoulder4_joint"
+    type="revolute">
+    <origin
+      xyz="0.19187 0.125 -0.055"
+      rpy="3.1416 0 1.5643" />
+    <parent
+      link="base_link" />
+    <child
+      link="Shoulder4_link" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="2.09"
+      upper="3.66"
+      effort="10"
+      velocity="4" />
+  </joint>
+  <link
+    name="Waist4_joint">
+    <inertial>
+      <origin
+        xyz="0.0725080394079408 5.64132074387658E-15 -0.0124999999999969"
+        rpy="0 0 0" />
+      <mass
+        value="0.591365572491094" />
+      <inertia
+        ixx="0.000192326305141676"
+        ixy="1.32033801752106E-16"
+        ixz="7.62423884944252E-17"
+        iyy="0.00305489019743548"
+        iyz="5.64865096700212E-19"
+        izz="0.00320512013282677" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Waist4_joint.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Waist4_joint.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Waist4_link"
+    type="revolute">
+    <origin
+      xyz="0.06 -0.0125 0.03"
+      rpy="1.5708 0.070805 0" />
+    <parent
+      link="Shoulder4_link" />
+    <child
+      link="Waist4_joint" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="0"
+      upper="1.22"
+      effort="10"
+      velocity="4" />
+  </joint>
+  <link
+    name="Knee4_link">
+    <inertial>
+      <origin
+        xyz="-0.00674755809678365 0.100903306482862 -0.0125000054884328"
+        rpy="0 0 0" />
+      <mass
+        value="0.2154342220238" />
+      <inertia
+        ixx="0.000812822910160513"
+        ixy="7.48737182851182E-05"
+        ixz="-7.3799590957672E-11"
+        iyy="4.62391536010821E-05"
+        iyz="7.71438142257438E-11"
+        izz="0.0008329865237343" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Knee4_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_robot_urdf/meshes/Knee4_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Knee4_joint"
+    type="revolute">
+    <origin
+      xyz="0.195 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Waist4_joint" />
+    <child
+      link="Knee4_link" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="1.05"
+      upper="4.54"
+      effort="10"
+      velocity="4" />
+  </joint>
+</robot>
