@@ -2,6 +2,9 @@ import pybullet as p
 import time
 import pybullet_data
 import os
+import numpy as np
+
+from IK_solver import inverseKinematic, forwardKinematic
 
 
 class Plane:
@@ -18,7 +21,8 @@ class Robot:
         self.start_pos = start_pos
         self.start_orientation = p.getQuaternionFromEuler(start_orientation)
         self.id = p.loadURDF(urdf_path, self.start_pos, self.start_orientation)
-        
+        self.jointStates = np.zeros(12)
+
         #joint information
         self.num_joints = p.getNumJoints(self.id)
         self.motor_joints = []
@@ -110,6 +114,92 @@ class Robot:
                 force=0
             )
 
+    def getLegMap(self, leg):
+        legMap = {
+            "FL": [9, 10, 11],
+            "FR": [6, 7, 8],
+            "BL": [0, 1, 2],
+            "BR": [3, 4, 5]
+        }
+        
+        if leg not in legMap:
+            print(f"ERROR: Invalid leg '{leg}'. Must be FL, FR, BL, or BR")
+            return None
+        
+        return legMap[leg]
+
+    def getLegPosition(self, leg, doPrint=False):
+        joints = self.getLegMap(leg)
+        if joints is None:
+            return None
+        
+        # Get current joint angles
+        joint_states = p.getJointStates(self.id, joints)
+        t1 = joint_states[0][0]  # First joint angle
+        t2 = joint_states[1][0]  # Second joint angle
+        t3 = joint_states[2][0]  # Third joint angle
+        
+        # Calculate forward kinematics
+        T03 = forwardKinematic(t1, t2, t3)
+        
+        # Extract position from transformation matrix
+        position = T03[:3, 3]
+        if doPrint:
+            print(f"{leg} position: x={position[0]:.2f} y={position[1]:.2f} z={position[2]:.2f}")
+        
+        return position
+
+    def moveLeg(self, leg, command):
+        joints = self.getLegMap(leg)
+        if joints is None:
+            return False
+
+        angles = inverseKinematic(command[0], command[1], command[2], self.jointStates[joints])
+        for i, joint in enumerate(joints):
+            self.jointStates[joint] = angles[i]
+
+        return True
+    
+    def moveLegRad(self, leg, command):
+        joints = self.getLegMap(leg)
+        if joints is None:
+            return False
+
+        for i, joint in enumerate(joints):
+            self.jointStates[joint] = command[i]
+
+        return True
+                
+    def updateJoints(self, kp=10, kd=1.2, max_force=500):
+        self.set_all_joints_pd_control(self.jointStates, kp=kp, kd=kd, max_force=max_force)
+    
+    def getLegLengths(self, leg, doPrint=False):
+        leg_data = {}
+        joints = self.getLegMap(leg)
+        
+        # Get the FK position (in leg's local frame)
+        joint_states = p.getJointStates(self.id, joints)
+        t1 = joint_states[0][0]
+        t2 = joint_states[1][0]
+        t3 = joint_states[2][0]
+        
+        # Use FK to get position relative to shoulder
+        T03 = forwardKinematic(t1, t2, t3)
+        delta = T03[:3, 3]
+        distance_3d = np.linalg.norm(delta)
+        
+        leg_data[leg] = {
+            "dx": delta[0],
+            "dy": delta[1],
+            "dz": delta[2],
+            "total": distance_3d
+        }
+        
+        if doPrint:
+            print(f"{leg}: dx={delta[0]:.3f}m, dy={delta[1]:.3f}m, dz={delta[2]:.3f}m, total={distance_3d:.3f}m")
+
+        return leg_data
+        
 
 class Simulation:
     def __init__(self, gui=True, gravity=-3.7):
@@ -150,24 +240,24 @@ class Simulation:
         p.disconnect()
 
 
-def startSimulation():
+def startSimulation(config):
     print("starting simulation")
     
     #Create simulation
-    sim = Simulation(gui=True, gravity=-3.7)
+    sim = Simulation(gui=True, gravity=config["gravity"])
     
     #Add plane
     plane = sim.add_plane()
     
     #Find URDF file
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    urdf_path = os.path.join(script_dir, "../data/Full_robot_urdf/urdf/Full_robot_urdf.urdf")
+    urdf_path = os.path.join(script_dir, config["urdfRelativePath"])
     
     #Add robot
     robot_temp = Robot.__new__(Robot)
     robot_temp.urdf_path = urdf_path
-    robot_temp.start_pos = [0, 0, 0.5]
-    robot_temp.start_orientation = p.getQuaternionFromEuler([0, 0, 0])
+    robot_temp.start_pos = config["startPos"]
+    robot_temp.start_orientation = p.getQuaternionFromEuler(config["startOrientation"])
     robot_temp.id = p.loadURDF(urdf_path, robot_temp.start_pos, robot_temp.start_orientation)
     
     #Get joint info
@@ -191,7 +281,7 @@ def startSimulation():
     
     #Create actual robot and disable default motors
     p.removeBody(robot_temp.id)
-    robot = sim.add_robot(urdf_path, start_pos=[0, 0, 0.5], start_orientation=[0, 0, 0])
+    robot = sim.add_robot(urdf_path, start_pos=config["startPos"], start_orientation=config["startOrientation"])
     
     robot.print_joint_positions()
     
@@ -200,25 +290,33 @@ def startSimulation():
     
     print(f"\nTarget positions (from URDF): {[f'{p:.3f}' for p in target_positions]}")
     
-    #PD control parameters
-    kp = 1
-    kd = 0.5
-    max_force = 50
-    
     print(f"\nRunning simulation with PD control")
-    print(f"Kp={kp}, Kd={kd}, Max Force={max_force}")
+    print(f"Kp={config['kp']}, Kd={config['kd']}, Max Force={config['maxForce']}")
     print("Close window or Ctrl+C to exit")
     
     #Run simulation with PD control
     try:
         for i in range(100000):
-            robot.set_all_joints_pd_control(target_positions, kp=kp, kd=kd, max_force=max_force)
-            sim.step()
-            
-            if i % 1000 == 0:
+            #robot.set_all_joints_pd_control(target_positions, kp=kp, kd=kd, max_force=max_force)
+            sim.step(config["timeStep"])
+            if i % 24 == 0:
+                #goalPos = [-0.6, 0.64, -0.1] #should result in joints [0.75,0,0]
+                goalPos = [-0.672, 0.572, 1.57]
+                angles = inverseKinematic(goalPos[0], goalPos[1], goalPos[2])
+                #robot.moveLeg("FL", goalPos)
+                robot.moveLegRad("FL", [0.75, 0, 0])
+                robot.updateJoints(kp=config["kp"], kd=config["kd"], max_force=config["maxForce"])
+
+            if i % 300 == 0:
+                print()
+                print("=====================")
                 current_pos, _ = robot.get_joint_states()
-                print(f"Step {i}: Positions = {[f'{p:.2f}' for p in current_pos]}")
-    
+                robot.getLegPosition("FL", True)        
+                print(f"result: t1={np.degrees(angles[0]):.2f}° t2={np.degrees(angles[1]):.2f}° t3={np.degrees(angles[2]):.2f}°")
+                robot.getLegLengths("FL", True)
+                #robot.print_joint_positions()     
+                #print(robot.jointStates)
+
     except KeyboardInterrupt:
         print("\nStopping simulation...")
         print(f"\nFinal joint positions: {target_positions}")
