@@ -239,6 +239,41 @@ class Simulation:
     def disconnect(self):
         p.disconnect()
 
+class GaitController:
+    def __init__(self, robot, length, height, duration):
+        self.controlledRobot = robot
+        self.gaitLength = length
+        self.gaitHeight = height
+        self.gaitDuration = duration
+
+    def calculateLegPosition(self, progress, startPos, endPos):
+        curGoalPos = startPos + progress *(endPos - startPos) #calculates the neccessary position to achieve movement within duration
+
+        zOffset = self.gaitHeight * np.sin(progress * np.pi)    #parabolic offset to allow "stepping" motion
+
+        curGoalPos[2] += zOffset
+
+        return curGoalPos
+    
+    def executeWalk(self, legName, goalPos, duration = 240):
+        startPos = self.controlledRobot.getLegPosition(legName)
+
+        for progress in range(duration):
+            percentage = progress / duration
+            goal = self.calculateLegPosition(percentage, startPos, goalPos)
+            self.controlledRobot.moveLeg(legName, goal)
+            yield False     #keeps state of function as long as it hasn't finished
+        yield True
+
+def gaitScheduler(gaitController):
+    schedule = [
+        ("FL",[-0.64, 0.61, 1.57]),
+        ("FR",[-0.64, 0.61, 1.57]),
+        ("BL",[-0.64, 0.61, 1.57]),
+        ("BR",[-0.64, 0.61, 1.57])
+    ]
+    for leg, goal in schedule:
+        yield from gaitController.executeWalk(leg, np.array(goal), 240)
 
 def startSimulation(config):
     print("starting simulation")
@@ -294,26 +329,31 @@ def startSimulation(config):
     print(f"Kp={config['kp']}, Kd={config['kd']}, Max Force={config['maxForce']}")
     print("Close window or Ctrl+C to exit")
     
+    #create gaitController
+    gaitController = GaitController(robot, 0.2, 0.1, 240)
+    walker = None
+
     #Run simulation with PD control
     try:
         for i in range(100000):
-            #robot.set_all_joints_pd_control(target_positions, kp=kp, kd=kd, max_force=max_force)
-            sim.step(config["timeStep"])
-            if i % 24 == 0:
-                #goalPos = [-0.6, 0.64, -0.1] #should result in joints [0.75,0,0]
-                goalPos = [-0.672, 0.572, 1.57]
-                angles = inverseKinematic(goalPos[0], goalPos[1], goalPos[2])
-                #robot.moveLeg("FL", goalPos)
-                robot.moveLegRad("FL", [0.75, 0, 0])
-                robot.updateJoints(kp=config["kp"], kd=config["kd"], max_force=config["maxForce"])
+            if walker is None:
+                walker = gaitScheduler(gaitController)
+            try:
+                next(walker)
+            except:
+                walker = None
 
-            if i % 300 == 0:
-                print()
-                print("=====================")
-                current_pos, _ = robot.get_joint_states()
-                robot.getLegPosition("FL", True)        
-                print(f"result: t1={np.degrees(angles[0]):.2f}° t2={np.degrees(angles[1]):.2f}° t3={np.degrees(angles[2]):.2f}°")
-                robot.getLegLengths("FL", True)
+            #update steps and advance simulation
+            robot.updateJoints(kp=config["kp"], kd=config["kd"], max_force=config["maxForce"])
+            sim.step(config["timeStep"])
+
+            #if i % 300 == 0:
+                # print()
+                # print("=====================")
+                # current_pos, _ = robot.get_joint_states()
+                #robot.getLegPosition("FR", True)        
+                # print(f"result: t1={np.degrees(angles[0]):.2f}° t2={np.degrees(angles[1]):.2f}° t3={np.degrees(angles[2]):.2f}°")
+                # robot.getLegLengths("FL", True)
                 #robot.print_joint_positions()     
                 #print(robot.jointStates)
 
