@@ -4,6 +4,24 @@
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
   name="Full_robot_urdf">
+  
+  <!-- Define materials -->
+  <material name="red">
+    <color rgba="1 0 0 1"/>
+  </material>
+  <material name="green">
+    <color rgba="0 1 0 1"/>
+  </material>
+  <material name="blue">
+    <color rgba="0 0 1 1"/>
+  </material>
+  <material name="yellow">
+    <color rgba="1 1 0 1"/>
+  </material>
+  <material name="gray">
+    <color rgba="0.898039215686275 0.917647058823529 0.929411764705882 1"/>
+  </material>
+  
   <link
     name="base_link">
     <inertial>
@@ -28,11 +46,7 @@
         <mesh
           filename="package://Full_robot_urdf/meshes/base_link.STL" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
-      </material>
+      <material name="gray"/>
     </visual>
     <collision>
       <origin
@@ -68,11 +82,7 @@
         <mesh
           filename="package://Full_robot_urdf/meshes/Shoulder1_link.STL" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
-      </material>
+      <material name="red"/>
     </visual>
     <collision>
       <origin
@@ -126,11 +136,7 @@
         <mesh
           filename="package://Full_robot_urdf/meshes/Waist1_link.STL" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
-      </material>
+      <material name="red"/>
     </visual>
     <collision>
       <origin
@@ -184,11 +190,7 @@
         <mesh
           filename="package://Full_robot_urdf/meshes/Knee1_link.STL" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
-      </material>
+      <material name="red"/>
     </visual>
     <collision>
       <origin
@@ -242,11 +244,7 @@
         <mesh
           filename="package://Full_robot_urdf/meshes/Shoulder2_link.STL" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
-      </material>
+      <material name="green"/>
     </visual>
     <collision>
       <origin
@@ -300,11 +298,7 @@
         <mesh
           filename="package://Full_robot_urdf/meshes/Waist2_link.STL" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
-      </material>
+      <material name="green"/>
     </visual>
     <collision>
       <origin
@@ -358,11 +352,7 @@
         <mesh
           filename="package://Full_robot_urdf/meshes/Knee2_link.STL" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
-      </material>
+      <material name="green"/>
     </visual>
     <collision>
       <origin
@@ -416,11 +406,7 @@
         <mesh
           filename="package://Full_robot_urdf/meshes/Shoulder3_link.STL" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
-      </material>
+      <material name="blue"/>
     </visual>
     <collision>
       <origin
@@ -474,11 +460,7 @@
         <mesh
           filename="package://Full_robot_urdf/meshes/Waist3_link.STL" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
-      </material>
+      <material name="blue"/>
     </visual>
     <collision>
       <origin
@@ -532,11 +514,7 @@
         <mesh
           filename="package://Full_robot_urdf/meshes/Knee3_link.STL" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
-      </material>
+      <material name="blue"/>
     </visual>
     <collision>
       <origin
@@ -590,11 +568,7 @@
         <mesh
           filename="package://Full_robot_urdf/meshes/Shoulder4_link.STL" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
-      </material>
+      <material name="yellow"/>
     </visual>
     <collision>
       <origin
@@ -648,11 +622,7 @@
         <mesh
           filename="package://Full_robot_urdf/meshes/Waist4_joint.STL" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
-      </material>
+      <material name="yellow"/>
     </visual>
     <collision>
       <origin
@@ -706,11 +676,7 @@
         <mesh
           filename="package://Full_robot_urdf/meshes/Knee4_link.STL" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
-      </material>
+      <material name="yellow"/>
     </visual>
     <collision>
       <origin
