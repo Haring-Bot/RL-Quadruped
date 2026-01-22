@@ -6,34 +6,55 @@ l2 = 0.195
 l3 = 0.1019
 
 def forwardKinematic(t1, t2, t3):
-    theta1 = np.deg2rad(90) + t1
-    #theta1 =t1
-    alpha1 = 0
-    a1 = l1
-    d1 =np.deg2rad(90)
+    theta1 = t1 + np.deg2rad(90)
+    alpha1 = np.deg2rad(90)
+    a1 = 0
+    d1 = 0
 
     theta2 = t2
     alpha2 = 0
-    a2 = l2
-    d2 = 0
+    a2 = l1
+    d2 = 0.03
 
     theta3 = t3 + np.deg2rad(90)
-    #theta3 =t3
     alpha3 = 0
-    a3 = l3
-    d3 = 0
+    a3 = l2
+    d3 = -0.0125
+
+    theta4 = 0
+    alpha4 = np.deg2rad(90)
+    a4 = l3
+    d4 = 0
 
     T01 = transformationMatrix(theta1, alpha1, a1, d1)
     T12 = transformationMatrix(theta2, alpha2, a2, d2)
     T23 = transformationMatrix(theta3, alpha3, a3, d3)
+    T34 = transformationMatrix(theta4, alpha4, a4, d4)
 
-    T03 = T01@T12@T23
+    T04 = T01@T12@T23@T34
 
-    return T03
+    return T04
 
 
 
-def inverseKinematic(goalX, goalY, goalZ, initialGuess=None, doPrint=False, ):
+def inverseKinematic(goalX, goalY, goalZ, initialGuess=None, doPrint=False):
+    # Check if goal is reachable before attempting IK
+    target = np.array([goalX, goalY, goalZ])
+    distance = np.linalg.norm(target)
+    max_reach = l1 + l2 + l3  # 0.9789 m
+    safe_reach = max_reach * 0.9  # 0.881 m (90% for safety)
+    
+    if distance > safe_reach:
+        print(f"⚠️  WARNING: Goal UNREACHABLE!")
+        print(f"   Target: x={goalX:.3f}, y={goalY:.3f}, z={goalZ:.3f}")
+        print(f"   Distance: {distance:.3f}m > Safe reach: {safe_reach:.3f}m")
+        print(f"   Attempting IK anyway, but expect poor results...")
+        print()
+    
+    if distance < 0.05:  # Too close to shoulder
+        print(f"⚠️  WARNING: Goal too close to shoulder joint!")
+        print(f"   Distance: {distance:.3f}m < Minimum: 0.05m")
+        print()
 
     bound1 = (-0.75, 0.75)
     bound2 = (0, 0.9)
@@ -46,10 +67,17 @@ def inverseKinematic(goalX, goalY, goalZ, initialGuess=None, doPrint=False, ):
         accuracy = np.linalg.norm(curPos - targetPos)
         return accuracy
     
-    target = np.array([goalX, goalY, goalZ])
     x0 = initialGuess if initialGuess is not None else [0, 0, 0]
     result = minimize(goalFunction, x0=x0, args=(target,), bounds=bounds, 
                       method="L-BFGS-B", options={'ftol': 1e-9, 'gtol': 1e-9})
+    
+    # Check if IK converged to a good solution
+    final_error = result.fun
+    if final_error > 0.01:  # More than 1cm error
+        print(f"⚠️  WARNING: IK solution has high error!")
+        print(f"   Target: x={goalX:.3f}, y={goalY:.3f}, z={goalZ:.3f}")
+        print(f"   Position error: {final_error*1000:.1f}mm")
+        print()
     
     if doPrint:
         print(f"result: t1={np.degrees(result.x[0]):.2f}° t2={np.degrees(result.x[1]):.2f}° t3={np.degrees(result.x[2]):.2f}°")
