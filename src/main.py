@@ -1,4 +1,5 @@
 import simulation
+import random
 
 def getRobotConfig():
     config = {

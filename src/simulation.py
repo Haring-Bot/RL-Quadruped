@@ -3,8 +3,10 @@ import time
 import pybullet_data
 import os
 import numpy as np
+import random
 
 from IK_solver import inverseKinematic, forwardKinematic
+from path_manager import PathManager
 
 
 class Plane:
@@ -318,6 +320,24 @@ def startSimulation(config):
     p.removeBody(robot_temp.id)
     robot = sim.add_robot(urdf_path, start_pos=config["startPos"], start_orientation=config["startOrientation"])
     
+    
+    path_mgr = PathManager(robot) #import functions for path planning
+    target = [2, 0,0]#[random.uniform(-10, 10), random.uniform(-10, 10), 0] #generate a target randomly, will have to be replace by coordinates of an object
+   
+    #------ Box for testing, to remove --------
+    visual_id = p.createVisualShape(p.GEOM_BOX, halfExtents=[0.3, 1, 0.25], rgbaColor=[0.8, 0.1, 0.1, 1])
+    collision_id = p.createCollisionShape(p.GEOM_BOX, halfExtents=[0.3, 1, 0.25])
+    p.createMultiBody(baseMass=0, baseCollisionShapeIndex=collision_id, 
+                     baseVisualShapeIndex=visual_id, basePosition=[1, 0, 0.25])
+    
+    visual_id = p.createVisualShape(p.GEOM_BOX, halfExtents=[1, 0.3, 0.25], rgbaColor=[0.8, 0.1, 0.1, 1])
+    collision_id = p.createCollisionShape(p.GEOM_BOX, halfExtents=[1, 0.3, 0.25])
+    p.createMultiBody(baseMass=0, baseCollisionShapeIndex=collision_id, 
+                     baseVisualShapeIndex=visual_id, basePosition=[0, 1, 0.25])
+    #------------------------------------------
+
+    path_mgr.plan_path(target) #planning the path with target and obstacle. This will have to be actualised in real time when we're moving in was of moving environement
+
     robot.print_joint_positions()
     
     #Move into default position
@@ -342,6 +362,9 @@ def startSimulation(config):
                 next(walker)
             except:
                 walker = None
+
+            #Acquire next waypoint
+            next_wp = path_mgr.get_next_waypoint()
 
             #update steps and advance simulation
             robot.updateJoints(kp=config["kp"], kd=config["kd"], max_force=config["maxForce"])
