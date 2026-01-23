@@ -3,6 +3,7 @@ import time
 import pybullet_data
 import os
 import numpy as np
+import itertools
 
 from IK_solver import inverseKinematic, forwardKinematic
 
@@ -115,11 +116,12 @@ class Robot:
             )
 
     def getLegMap(self, leg):
+        #Indices into self.jointStates array (motor joints only)
         legMap = {
-            "FL": [9, 10, 11],
-            "FR": [6, 7, 8],
             "BL": [0, 1, 2],
-            "BR": [3, 4, 5]
+            "BR": [3, 4, 5],
+            "FR": [6, 7, 8],
+            "FL": [9, 10, 11]
         }
         
         if leg not in legMap:
@@ -129,20 +131,23 @@ class Robot:
         return legMap[leg]
 
     def getLegPosition(self, leg, doPrint=False):
-        joints = self.getLegMap(leg)
-        if joints is None:
+        joints_indices = self.getLegMap(leg)
+        if joints_indices is None:
             return None
         
-        # Get current joint angles
-        joint_states = p.getJointStates(self.id, joints)
-        t1 = joint_states[0][0]  # First joint angle
-        t2 = joint_states[1][0]  # Second joint angle
-        t3 = joint_states[2][0]  # Third joint angle
+        #Convert self.jointStates indices to PyBullet joint indices
+        pybullet_joints = [self.motor_joints[i] for i in joints_indices]
         
-        # Calculate forward kinematics
+        #Get current joint angles
+        joint_states = p.getJointStates(self.id, pybullet_joints)
+        t1 = joint_states[0][0]
+        t2 = joint_states[1][0]
+        t3 = joint_states[2][0]
+        
+        #Calculate forward kinematics
         T03 = forwardKinematic(t1, t2, t3)
         
-        # Extract position from transformation matrix
+        #Extract position from transformation matrix
         position = T03[:3, 3]
         if doPrint:
             print(f"{leg} position: x={position[0]:.2f} y={position[1]:.2f} z={position[2]:.2f}")
@@ -173,34 +178,169 @@ class Robot:
     def updateJoints(self, kp=10, kd=1.2, max_force=500):
         self.set_all_joints_pd_control(self.jointStates, kp=kp, kd=kd, max_force=max_force)
     
-    def getLegLengths(self, leg, doPrint=False):
-        leg_data = {}
-        joints = self.getLegMap(leg)
+    def verifyDHParameters(self, leg, doPrint=True):
+        joints_indices = self.getLegMap(leg)
+        if joints_indices is None:
+            return None
         
-        # Get the FK position (in leg's local frame)
-        joint_states = p.getJointStates(self.id, joints)
+        pybullet_joints = [self.motor_joints[i] for i in joints_indices]
+        
+        # Get current joint angles
+        joint_states = p.getJointStates(self.id, pybullet_joints)
         t1 = joint_states[0][0]
         t2 = joint_states[1][0]
         t3 = joint_states[2][0]
         
-        # Use FK to get position relative to shoulder
+        # Calculate FK position
         T03 = forwardKinematic(t1, t2, t3)
-        delta = T03[:3, 3]
-        distance_3d = np.linalg.norm(delta)
+        fk_position = T03[:3, 3]
         
-        leg_data[leg] = {
-            "dx": delta[0],
-            "dy": delta[1],
-            "dz": delta[2],
-            "total": distance_3d
-        }
+        # Get the shoulder joint's link state (parent of first joint)
+        shoulder_joint_idx = pybullet_joints[0]
+        foot_link_idx = pybullet_joints[2] + 1
+        
+        # Get link states - use link frames, not joint frames
+        shoulder_link_state = p.getLinkState(self.id, shoulder_joint_idx)
+        foot_link_state = p.getLinkState(self.id, foot_link_idx)
+        
+        shoulder_pos = np.array(shoulder_link_state[4])  # [4] is local frame origin in world
+        shoulder_orn = np.array(shoulder_link_state[5])  # [5] is local frame orientation
+        foot_pos = np.array(foot_link_state[4])
+        
+        # Transform foot position to shoulder's local frame
+        # 1. Get vector in world frame
+        vec_world = foot_pos - shoulder_pos
+        
+        # 2. Convert to shoulder's local frame using inverse rotation
+        rot_matrix = np.array(p.getMatrixFromQuaternion(shoulder_orn)).reshape(3, 3)
+        actual_position = rot_matrix.T @ vec_world
+        
+        # Calculate error
+        error = actual_position - fk_position
+        error_magnitude = np.linalg.norm(error)
         
         if doPrint:
-            print(f"{leg}: dx={delta[0]:.3f}m, dy={delta[1]:.3f}m, dz={delta[2]:.3f}m, total={distance_3d:.3f}m")
-
-        return leg_data
+            print(f"\n=== {leg} DH Parameter Verification ===")
+            print(f"Joint angles: t1={np.degrees(t1):.2f}°, t2={np.degrees(t2):.2f}°, t3={np.degrees(t3):.2f}°")
+            print(f"FK result:       x={fk_position[0]:.3f}, y={fk_position[1]:.3f}, z={fk_position[2]:.3f}")
+            print(f"PyBullet local:  x={actual_position[0]:.3f}, y={actual_position[1]:.3f}, z={actual_position[2]:.3f}")
+            print(f"Error:           x={error[0]:.3f}, y={error[1]:.3f}, z={error[2]:.3f}")
+            print(f"Error magnitude: {error_magnitude:.3f}m")
+            if error_magnitude < 0.01:
+                print("✓ DH parameters appear CORRECT")
+            else:
+                print("✗ DH parameters may be WRONG")
+    
+        return {
+            "fk_position": fk_position,
+            "actual_position": actual_position,
+            "error": error,
+            "error_magnitude": error_magnitude
+        }
+    
+    def moveLegPyBulletIK(self, leg, target_position):
+        """
+        Use PyBullet's built-in IK
+        target_position: [x, y, z] in BODY/BASE frame
+        """
+        joints_indices = self.getLegMap(leg)
+        if joints_indices is None:
+            return False
         
+        pybullet_joints = [self.motor_joints[i] for i in joints_indices]
+        foot_link_idx = pybullet_joints[2] + 1
+        
+        # Get body/base transform
+        base_pos, base_orn = p.getBasePositionAndOrientation(self.id)
+        
+        # Convert target from body frame to world frame
+        base_rot = np.array(p.getMatrixFromQuaternion(base_orn)).reshape(3, 3)
+        target_world = np.array(base_pos) + base_rot @ np.array(target_position)
+        
+        # Get current joint positions to use as rest pose
+        current_joint_positions = []
+        for i in range(len(self.motor_joints)):
+            joint_state = p.getJointState(self.id, self.motor_joints[i])
+            current_joint_positions.append(joint_state[0])
 
+        # Call IK
+        result = p.calculateInverseKinematics(
+            self.id,
+            foot_link_idx,
+            target_world,
+            lowerLimits=[-3.14]*len(self.motor_joints),
+            upperLimits=[3.14]*len(self.motor_joints),
+            jointRanges=[6.28]*len(self.motor_joints),
+            restPoses=current_joint_positions,
+            maxNumIterations=100,
+            residualThreshold=0.001
+        )
+        
+        # Extract the 3 joints for this leg
+        result_idx_0 = self.motor_joints.index(pybullet_joints[0])
+        result_idx_1 = self.motor_joints.index(pybullet_joints[1])
+        result_idx_2 = self.motor_joints.index(pybullet_joints[2])
+        
+        self.jointStates[joints_indices[0]] = result[result_idx_0]
+        self.jointStates[joints_indices[1]] = result[result_idx_1]
+        self.jointStates[joints_indices[2]] = result[result_idx_2]
+        
+        return True
+    
+    def printLegCoordinates(self, leg):
+        """
+        Print foot position in BASE frame (for use with PyBullet IK)
+        These coordinates are independent of shoulder rotation
+        """
+        joints_indices = self.getLegMap(leg)
+        if joints_indices is None:
+            return None
+        
+        pybullet_joints = [self.motor_joints[i] for i in joints_indices]
+        foot_link_idx = pybullet_joints[2] + 1
+        
+        # Get base (body) and foot transforms
+        base_pos, base_orn = p.getBasePositionAndOrientation(self.id)
+        foot_state = p.getLinkState(self.id, foot_link_idx)
+        
+        base_pos = np.array(base_pos)
+        base_orn = np.array(base_orn)
+        foot_pos = np.array(foot_state[4])
+        
+        # Transform foot position to base's local frame
+        rot_matrix = np.array(p.getMatrixFromQuaternion(base_orn)).reshape(3, 3)
+        vec_world = foot_pos - base_pos
+        local_position = rot_matrix.T @ vec_world
+        
+        print(f"{leg}: [{local_position[0]:.3f}, {local_position[1]:.3f}, {local_position[2]:.3f}]")
+        return local_position
+    
+    def printLegCoordinatesForIK(self, leg):
+        """
+        Print foot position in body frame - works with moveLegPyBulletIK
+        """
+        joints_indices = self.getLegMap(leg)
+        if joints_indices is None:
+            return None
+        
+        pybullet_joints = [self.motor_joints[i] for i in joints_indices]
+        foot_link_idx = pybullet_joints[2] + 1
+        
+        # Get body/base frame
+        base_pos, base_orn = p.getBasePositionAndOrientation(self.id)
+        
+        # Get foot position
+        foot_state = p.getLinkState(self.id, foot_link_idx)
+        foot_pos = np.array(foot_state[4])
+        
+        # Transform to body local frame
+        base_rot = np.array(p.getMatrixFromQuaternion(base_orn)).reshape(3, 3)
+        vec_world = foot_pos - np.array(base_pos)
+        local_position = base_rot.T @ vec_world
+        
+        print(f"{leg}: [{local_position[0]:.3f}, {local_position[1]:.3f}, {local_position[2]:.3f}]")
+        return local_position
+    
 class Simulation:
     def __init__(self, gui=True, gravity=-3.7):
         self.physics_client = p.connect(p.GUI if gui else p.DIRECT)
@@ -246,6 +386,33 @@ class GaitController:
         self.gaitHeight = height
         self.gaitDuration = duration
 
+        self.phaseFL = 0
+        self.phaseBR = 1
+        self.phaseFR = 2
+        self.phaseBL = 3
+
+        self.goalFL = [0, 0, 0]
+        self.goalBR = [0, 0, 0]
+        self.goalFR = [0, 0, 0]
+        self.goalBL = [0, 0, 0]
+
+    def getPhase(self, leg):
+        """Get current phase for a leg"""
+        phases = {
+            "FL": self.phaseFL,
+            "BR": self.phaseBR,
+            "FR": self.phaseFR,
+            "BL": self.phaseBL
+        }
+        return phases[leg]
+    
+    def updateAllPhases(self):
+        """Update all leg phases simultaneously"""
+        self.phaseFL = (self.phaseFL + 1) % 4
+        self.phaseBR = (self.phaseBR + 1) % 4
+        self.phaseFR = (self.phaseFR + 1) % 4
+        self.phaseBL = (self.phaseBL + 1) % 4
+
     def calculateLegPosition(self, progress, startPos, endPos):
         curGoalPos = startPos + progress *(endPos - startPos) #calculates the neccessary position to achieve movement within duration
 
@@ -258,6 +425,20 @@ class GaitController:
     def executeWalk(self, legName, goalPos, duration = 240):
         startPos = self.controlledRobot.getLegPosition(legName)
 
+        offsetFL = np.array([0.153, 0.387, -0.136])
+        offsetFR = np.array([0.175, -0.384, -0.142])
+        offsetBL = np.array([-0.237, 0.386, -0.139])
+        offsetBR = np.array([-0.202, -0.382, -0.143])
+
+        if legName == "FL":
+            goalPos += offsetFL
+        elif legName == "FR":
+            goalPos += offsetFR
+        elif legName == "BL":
+            goalPos += offsetBL
+        elif legName == "BR":
+            goalPos += offsetBR
+
         for progress in range(duration):
             percentage = progress / duration
             goal = self.calculateLegPosition(percentage, startPos, goalPos)
@@ -267,14 +448,65 @@ class GaitController:
 
 def gaitScheduler(gaitController):
     schedule = [
-        ("FL",[-0.64, 0.61, 1.57]),
-        ("FR",[-0.64, 0.61, 1.57]),
-        ("BL",[-0.64, 0.61, 1.57]),
-        ("BR",[-0.64, 0.61, 1.57])
+        ("FL"),
+        ("BR"),
+        ("FR"),
+        ("BL")
     ]
     for leg, goal in schedule:
         yield from gaitController.executeWalk(leg, np.array(goal), 240)
 
+def updatePhase(self):
+    curPhase = next(self.phases)
+
+    self.phaseFL = curPhase
+    self.phaseBR = curPhase + 1
+    self.phaseFR = curPhase + 2
+    self.phaseBL = curPhase + 3
+
+def crawlGait(gaitController):
+    # Define phase goals
+    phase_goals = {
+        0: np.array([0.1, 0, 0]),      # Forward swing
+        1: np.array([0, 0, 0.1]),       # Neutral stance
+        2: np.array([-0.1, 0, 0.1]),    # Backward push
+        3: np.array([0, 0, 0.1])        # Neutral stance
+    }
+    
+    # Create a walker (generator) for each leg
+    walkers = {
+        "FL": None,
+        "BR": None,
+        "FR": None,
+        "BL": None
+    }
+    
+    while True:  # Continuous gait loop
+        all_done = True
+        
+        # Process ALL legs in the same iteration
+        for leg in ["FL", "BR", "FR", "BL"]:
+            # Start new movement if walker is done or not started
+            if walkers[leg] is None:
+                phase = gaitController.getPhase(leg)  # Get current phase for this leg
+                goal = phase_goals[phase]
+                walkers[leg] = gaitController.executeWalk(leg, goal, duration=240)
+            
+            # Execute ONE step for this leg
+            try:
+                done = next(walkers[leg])  # Move leg slightly
+                if not done:
+                    all_done = False  # Still moving
+                else:
+                    walkers[leg] = None  # Movement complete
+            except StopIteration:
+                walkers[leg] = None
+        
+        # When all legs finish, update phases and restart
+        if all_done:
+            gaitController.updateAllPhases()
+        
+        yield False  # Return control to main loop
 def startSimulation(config):
     print("starting simulation")
     
@@ -330,30 +562,59 @@ def startSimulation(config):
     print("Close window or Ctrl+C to exit")
     
     #create gaitController
-    gaitController = GaitController(robot, 0.2, 0.1, 240)
+    gaitController = GaitController(robot, 1.2, 0.2, 240)
     walker = None
 
     #Run simulation with PD control
     try:
         for i in range(100000):
-            if walker is None:
-                walker = gaitScheduler(gaitController)
-            try:
-                next(walker)
-            except:
-                walker = None
+            gaitMode = True
+            if gaitMode:
+                if walker is None:
+                   walker = crawlGait(gaitController)
+                   #walker = gaitScheduler(gaitController)
+                try:
+                   next(walker)
+                except:
+                   walker = None
+            else:
+                radMode = False
+                if radMode:
+                    radGoal = [0, 0.0, 0]
+                    robot.moveLegRad("FL", radGoal)
+                    robot.moveLegRad("FR", radGoal)
+                    robot.moveLegRad("BL", radGoal)
+                    robot.moveLegRad("BR", radGoal)
+                else:
+                    #goal = np.array([0, 0, 0.1])  #neutral
+                    #goal = np.array([0.1, 0, 0.radMode1])  #forward
+                    goal = np.array([-0.1, 0, 0.1])  #backward
+                    offsetFL = np.array([0.153, 0.387, -0.136])
+                    offsetFR = np.array([0.175, -0.384, -0.142])
+                    offsetBL = np.array([-0.237, 0.386, -0.139])
+                    offsetBR = np.array([-0.202, -0.382, -0.143])
 
+                    robot.moveLegPyBulletIK("FL", goal+offsetFL)
+                    robot.moveLegPyBulletIK("FR", goal+offsetFR)
+                    robot.moveLegPyBulletIK("BL", goal+offsetBL)
+                    robot.moveLegPyBulletIK("BR", goal+offsetBR)
+
+                    
             #update steps and advance simulation
             robot.updateJoints(kp=config["kp"], kd=config["kd"], max_force=config["maxForce"])
             sim.step(config["timeStep"])
 
-            #if i % 300 == 0:
-                # print()
-                # print("=====================")
-                # current_pos, _ = robot.get_joint_states()
-                #robot.getLegPosition("FR", True)        
-                # print(f"result: t1={np.degrees(angles[0]):.2f}° t2={np.degrees(angles[1]):.2f}° t3={np.degrees(angles[2]):.2f}°")
-                # robot.getLegLengths("FL", True)
+            if i % 300 == 0:
+                robot.printLegCoordinatesForIK("FL")
+                robot.printLegCoordinatesForIK("FR")
+                robot.printLegCoordinatesForIK("BL")
+                robot.printLegCoordinatesForIK("BR")
+                # robot.getLegPosition("FL", True) 
+                # robot.getLegPosition("FR", True) 
+                # robot.getLegPosition("BL", True)      
+                # robot.getLegPosition("BR", True) 
+                #robot.verifyDHParameters("FL")
+                #print(f"result: t1={np.degrees(angles[0]):.2f}° t2={np.degrees(angles[1]):.2f}° t3={np.degrees(angles[2]):.2f}°")
                 #robot.print_joint_positions()     
                 #print(robot.jointStates)
 

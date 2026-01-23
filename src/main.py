@@ -1,4 +1,5 @@
 import simulation
+import numpy as np
 
 def getRobotConfig():
     config = {
@@ -9,10 +10,10 @@ def getRobotConfig():
         #PD Control parameters
         "kp": 1,
         "kd": 0.5,
-        "maxForce": 50,
+        "maxForce": 10,
         
         #Robot initial pose
-        "startPos": [0, 0, 0.5],
+        "startPos": [0, 0, 0.2],
         "startOrientation": [0, 0, 0],
         
         #URDF path
@@ -50,7 +51,6 @@ def getCommandConfig():
         
     }
     return config
-
 
 def main():
     print("start")

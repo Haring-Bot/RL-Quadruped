@@ -21,6 +21,9 @@
   <material name="gray">
     <color rgba="0.898039215686275 0.917647058823529 0.929411764705882 1"/>
   </material>
+  <material name="black">
+    <color rgba="0.2 0.2 0.2 1"/>
+  </material>
   
   <link
     name="base_link">
@@ -29,7 +32,7 @@
         xyz="0.0284130316166329 0 -0.037055289412498"
         rpy="0 0 0" />
       <mass
-        value="26.5470635630031" />
+        value="10.5470635630031" />
       <inertia
         ixx="0.146794905291758"
         ixy="1.63338502818567E-16"
@@ -109,7 +112,7 @@
     <limit
       lower="-0.75"
       upper="0.75"
-      effort="50"
+      effort="100"
       velocity="4" />
   </joint>
   <link
@@ -163,7 +166,7 @@
     <limit
       lower="0"
       upper="0.90"
-      effort="50"
+      effort="100"
       velocity="4" />
   </joint>
   <link
@@ -217,9 +220,49 @@
     <limit
       lower="-0.60"
       upper="2.30"
-      effort="50"
+      effort="100"
       velocity="4" />
   </joint>
+  <!-- Foot 1 -->
+  <link
+    name="Foot1_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.05" />
+      <inertia
+        ixx="0.00001"
+        ixy="0"
+        ixz="0"
+        iyy="0.00001"
+        iyz="0"
+        izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Foot1_joint"
+    type="fixed">
+    <origin
+      xyz="0 0.1019 0"
+      rpy="0 0 0" />
+    <parent
+      link="Knee1_link" />
+    <child
+      link="Foot1_link" />
+  </joint>
+  
   <link
     name="Shoulder2_link">
     <inertial>
@@ -271,7 +314,7 @@
     <limit
       lower="-0.75"
       upper="0.75"
-      effort="50"
+      effort="100"
       velocity="4" />
   </joint>
   <link
@@ -325,7 +368,7 @@
     <limit
       lower="0"
       upper="0.90"
-      effort="50"
+      effort="100"
       velocity="4" />
   </joint>
   <link
@@ -379,9 +422,49 @@
     <limit
       lower="-0.60"
       upper="2.30"
-      effort="50"
+      effort="100"
       velocity="4" />
   </joint>
+  <!-- Foot 2 -->
+  <link
+    name="Foot2_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.05" />
+      <inertia
+        ixx="0.00001"
+        ixy="0"
+        ixz="0"
+        iyy="0.00001"
+        iyz="0"
+        izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Foot2_joint"
+    type="fixed">
+    <origin
+      xyz="0 0.1019 0"
+      rpy="0 0 0" />
+    <parent
+      link="Knee2_link" />
+    <child
+      link="Foot2_link" />
+  </joint>
+  
   <link
     name="Shoulder3_link">
     <inertial>
@@ -433,7 +516,7 @@
     <limit
       lower="-0.75"
       upper="0.75"
-      effort="50"
+      effort="100"
       velocity="4" />
   </joint>
   <link
@@ -487,7 +570,7 @@
     <limit
       lower="0"
       upper="0.90"
-      effort="50"
+      effort="100"
       velocity="4" />
   </joint>
   <link
@@ -541,9 +624,49 @@
     <limit
       lower="-0.60"
       upper="2.30"
-      effort="50"
+      effort="100"
       velocity="4" />
   </joint>
+  <!-- Foot 3 -->
+  <link
+    name="Foot3_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.05" />
+      <inertia
+        ixx="0.00001"
+        ixy="0"
+        ixz="0"
+        iyy="0.00001"
+        iyz="0"
+        izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Foot3_joint"
+    type="fixed">
+    <origin
+      xyz="0 0.1019 0"
+      rpy="0 0 0" />
+    <parent
+      link="Knee3_link" />
+    <child
+      link="Foot3_link" />
+  </joint>
+  
   <link
     name="Shoulder4_link">
     <inertial>
@@ -595,7 +718,7 @@
     <limit
       lower="-0.75"
       upper="0.75"
-      effort="50"
+      effort="100"
       velocity="4" />
   </joint>
   <link
@@ -649,7 +772,7 @@
     <limit
       lower="0"
       upper="0.90"
-      effort="50"
+      effort="100"
       velocity="4" />
   </joint>
   <link
@@ -703,7 +826,46 @@
     <limit
       lower="-0.60"
       upper="2.30"
-      effort="50"
+      effort="100"
       velocity="4" />
+  </joint>
+  <!-- Foot 4 -->
+  <link
+    name="Foot4_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.05" />
+      <inertia
+        ixx="0.00001"
+        ixy="0"
+        ixz="0"
+        iyy="0.00001"
+        iyz="0"
+        izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Foot4_joint"
+    type="fixed">
+    <origin
+      xyz="0 0.1019 0"
+      rpy="0 0 0" />
+    <parent
+      link="Knee4_link" />
+    <child
+      link="Foot4_link" />
   </joint>
 </robot>
