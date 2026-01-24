@@ -263,15 +263,28 @@ class Robot:
             joint_state = p.getJointState(self.id, self.motor_joints[i])
             current_joint_positions.append(joint_state[0])
 
-        # Call IK
+        # Define REALISTIC joint limits (adjust these based on your robot's URDF)
+        lower_limits = []
+        upper_limits = []
+        joint_ranges = []
+        
+        for i in range(len(self.motor_joints)):
+            # Tighter limits to prevent flipping
+            # Adjust these values based on your robot's actual joint limits
+            lower_limits.append(-2.8)  # ~-160 degrees
+            upper_limits.append(2.8)   # ~160 degrees
+            joint_ranges.append(5.6)   # Range
+    
+        # Call IK with damping to prefer staying close to rest pose
         result = p.calculateInverseKinematics(
             self.id,
             foot_link_idx,
             target_world,
-            lowerLimits=[-3.14]*len(self.motor_joints),
-            upperLimits=[3.14]*len(self.motor_joints),
-            jointRanges=[6.28]*len(self.motor_joints),
+            lowerLimits=lower_limits,
+            upperLimits=upper_limits,
+            jointRanges=joint_ranges,
             restPoses=current_joint_positions,
+            jointDamping=[0.1] * len(self.motor_joints),  # ← ADDED: Prefer staying close to rest pose
             maxNumIterations=100,
             residualThreshold=0.001
         )
@@ -423,28 +436,54 @@ class GaitController:
         return curGoalPos
     
     def executeWalk(self, legName, goalPos, duration = 240):
-        startPos = self.controlledRobot.getLegPosition(legName)
-
+        # Get current position in BODY frame (not shoulder-local frame)
+        joints_indices = self.controlledRobot.getLegMap(legName)
+        pybullet_joints = [self.controlledRobot.motor_joints[i] for i in joints_indices]
+        foot_link_idx = pybullet_joints[2] + 1
+        
+        base_pos, base_orn = p.getBasePositionAndOrientation(self.controlledRobot.id)
+        foot_state = p.getLinkState(self.controlledRobot.id, foot_link_idx)
+        foot_pos = np.array(foot_state[4])
+        
+        # Transform to body local frame
+        base_rot = np.array(p.getMatrixFromQuaternion(base_orn)).reshape(3, 3)
+        vec_world = foot_pos - np.array(base_pos)
+        startPos = base_rot.T @ vec_world
+        
+        # Add offsets to goal (goal is already in body frame)
         offsetFL = np.array([0.153, 0.387, -0.136])
         offsetFR = np.array([0.175, -0.384, -0.142])
         offsetBL = np.array([-0.237, 0.386, -0.139])
         offsetBR = np.array([-0.202, -0.382, -0.143])
 
         if legName == "FL":
-            goalPos += offsetFL
+            goalPos = goalPos# + offsetFL
         elif legName == "FR":
-            goalPos += offsetFR
+            goalPos = goalPos# + offsetFR
         elif legName == "BL":
-            goalPos += offsetBL
+            goalPos = goalPos #+ offsetBL
         elif legName == "BR":
-            goalPos += offsetBR
+            goalPos = goalPos #+ offsetBR
 
         for progress in range(duration):
             percentage = progress / duration
             goal = self.calculateLegPosition(percentage, startPos, goalPos)
-            self.controlledRobot.moveLeg(legName, goal)
-            yield False     #keeps state of function as long as it hasn't finished
+            self.controlledRobot.moveLegPyBulletIK(legName, goal)
+            yield False
         yield True
+
+    def sequentialWalk(self, speed):
+        fwdGoal = np.array([0.242, 0.246, -0.01])      # Forward swing
+        ntrlGoal = np.array([0.1, 0, 0.2])     # Neutral stance  
+        bkwdGoal = np.array([0.05, 0.246, -0.01])  # Backward push
+        
+        while True:  # Loop forever
+            print("fwd")
+            yield from self.executeWalk("FL", fwdGoal, speed)
+            print("bkwd")
+            yield from self.executeWalk("FL", bkwdGoal, speed)
+            # print("ntrl")
+            # yield from self.executeWalk("FL", ntrlGoal, speed)
 
 def gaitScheduler(gaitController):
     schedule = [
@@ -507,6 +546,10 @@ def crawlGait(gaitController):
             gaitController.updateAllPhases()
         
         yield False  # Return control to main loop
+
+
+            
+
 def startSimulation(config):
     print("starting simulation")
     
@@ -568,8 +611,8 @@ def startSimulation(config):
     #Run simulation with PD control
     try:
         for i in range(100000):
-            gaitMode = True
-            if gaitMode:
+            walkingMode = "seq"
+            if walkingMode == "gait":
                 if walker is None:
                    walker = crawlGait(gaitController)
                    #walker = gaitScheduler(gaitController)
@@ -577,28 +620,40 @@ def startSimulation(config):
                    next(walker)
                 except:
                    walker = None
-            else:
-                radMode = False
-                if radMode:
-                    radGoal = [0, 0.0, 0]
-                    robot.moveLegRad("FL", radGoal)
-                    robot.moveLegRad("FR", radGoal)
-                    robot.moveLegRad("BL", radGoal)
-                    robot.moveLegRad("BR", radGoal)
-                else:
-                    #goal = np.array([0, 0, 0.1])  #neutral
-                    #goal = np.array([0.1, 0, 0.radMode1])  #forward
-                    goal = np.array([-0.1, 0, 0.1])  #backward
-                    offsetFL = np.array([0.153, 0.387, -0.136])
-                    offsetFR = np.array([0.175, -0.384, -0.142])
-                    offsetBL = np.array([-0.237, 0.386, -0.139])
-                    offsetBR = np.array([-0.202, -0.382, -0.143])
 
-                    robot.moveLegPyBulletIK("FL", goal+offsetFL)
-                    robot.moveLegPyBulletIK("FR", goal+offsetFR)
-                    robot.moveLegPyBulletIK("BL", goal+offsetBL)
-                    robot.moveLegPyBulletIK("BR", goal+offsetBR)
+            elif walkingMode == "rad":
+                radGoal = [0, 0.0, 0]
+                robot.moveLegRad("FL", radGoal)
+                robot.moveLegRad("FR", radGoal)
+                robot.moveLegRad("BL", radGoal)
+                robot.moveLegRad("BR", radGoal)
+            elif walkingMode == "IK":
+                #goal = np.array([0, 0, 0.1])  #neutral
+                #goal = np.array([0.1, 0, 0.radMode1])  #forward
+                goal = np.array([-0.1, 0, 0.1])  #backward
+                offsetFL = np.array([0.153, 0.387, -0.136])
+                offsetFR = np.array([0.175, -0.384, -0.142])
+                offsetBL = np.array([-0.237, 0.386, -0.139])
+                offsetBR = np.array([-0.202, -0.382, -0.143])
 
+                robot.moveLegPyBulletIK("FL", goal+offsetFL)
+                robot.moveLegPyBulletIK("FR", goal+offsetFR)
+                robot.moveLegPyBulletIK("BL", goal+offsetBL)
+                robot.moveLegPyBulletIK("BR", goal+offsetBR)
+            elif walkingMode == "seq":
+                if walker is None:
+                    walker = gaitController.sequentialWalk(720)
+                try:
+                    next(walker)
+                except:
+                    walker = None
+            elif walkingMode == "slider":
+                if walker is None:
+                    walker = sliderControl(robot)
+                try:
+                    next(walker)
+                except:
+                    walker = None
                     
             #update steps and advance simulation
             robot.updateJoints(kp=config["kp"], kd=config["kd"], max_force=config["maxForce"])
@@ -632,5 +687,75 @@ def startSimulation(config):
     sim.disconnect()
 
 
-if __name__ == "__main__":
-    startSimulation()
+def sliderControl(robot):
+    """
+    Add GUI sliders to control robot legs and print positions for executeWalk
+    """
+    import pybullet as p
+    
+    # Create sliders for FL leg
+    slider_fl_x = p.addUserDebugParameter("FL_X", -0.5, 0.5, 0.153)
+    slider_fl_y = p.addUserDebugParameter("FL_Y", 0.0, 0.6, 0.387)
+    slider_fl_z = p.addUserDebugParameter("FL_Z", -0.3, 0.3, -0.136)
+    
+    # Create sliders for FR leg
+    slider_fr_x = p.addUserDebugParameter("FR_X", -0.5, 0.5, 0.175)
+    slider_fr_y = p.addUserDebugParameter("FR_Y", -0.6, 0.0, -0.384)
+    slider_fr_z = p.addUserDebugParameter("FR_Z", -0.3, 0.3, -0.142)
+    
+    # Create sliders for BL leg
+    slider_bl_x = p.addUserDebugParameter("BL_X", -0.5, 0.5, -0.237)
+    slider_bl_y = p.addUserDebugParameter("BL_Y", 0.0, 0.6, 0.386)
+    slider_bl_z = p.addUserDebugParameter("BL_Z", -0.3, 0.3, -0.139)
+    
+    # Create sliders for BR leg
+    slider_br_x = p.addUserDebugParameter("BR_X", -0.5, 0.5, -0.202)
+    slider_br_y = p.addUserDebugParameter("BR_Y", -0.6, 0.0, -0.382)
+    slider_br_z = p.addUserDebugParameter("BR_Z", -0.3, 0.3, -0.143)
+    
+    # Print button (using a slider as button)
+    print_button = p.addUserDebugParameter("Print Positions (>0.5)", 0, 1, 0)
+    
+    last_print_state = 0
+    
+    while True:
+        # Read slider values
+        fl_x = p.readUserDebugParameter(slider_fl_x)
+        fl_y = p.readUserDebugParameter(slider_fl_y)
+        fl_z = p.readUserDebugParameter(slider_fl_z)
+        
+        fr_x = p.readUserDebugParameter(slider_fr_x)
+        fr_y = p.readUserDebugParameter(slider_fr_y)
+        fr_z = p.readUserDebugParameter(slider_fr_z)
+        
+        bl_x = p.readUserDebugParameter(slider_bl_x)
+        bl_y = p.readUserDebugParameter(slider_bl_y)
+        bl_z = p.readUserDebugParameter(slider_bl_z)
+        
+        br_x = p.readUserDebugParameter(slider_br_x)
+        br_y = p.readUserDebugParameter(slider_br_y)
+        br_z = p.readUserDebugParameter(slider_br_z)
+        
+        # Move legs to slider positions
+        robot.moveLegPyBulletIK("FL", [fl_x, fl_y, fl_z])
+        robot.moveLegPyBulletIK("FR", [fr_x, fr_y, fr_z])
+        robot.moveLegPyBulletIK("BL", [bl_x, bl_y, bl_z])
+        robot.moveLegPyBulletIK("BR", [br_x, br_y, br_z])
+        
+        # Check print button
+        print_state = p.readUserDebugParameter(print_button)
+        if print_state > 0.5 and last_print_state <= 0.5:
+            print("\n=== Current Leg Positions (for executeWalk) ===")
+            print(f"FL_goal = np.array([{fl_x:.3f}, {fl_y:.3f}, {fl_z:.3f}])")
+            print(f"FR_goal = np.array([{fr_x:.3f}, {fr_y:.3f}, {fr_z:.3f}])")
+            print(f"BL_goal = np.array([{bl_x:.3f}, {bl_y:.3f}, {bl_z:.3f}])")
+            print(f"BR_goal = np.array([{br_x:.3f}, {br_y:.3f}, {br_z:.3f}])")
+            print("\n=== Relative to offsets (goals without offsets) ===")
+            print(f"FL_relative = np.array([{fl_x - 0.153:.3f}, {fl_y - 0.387:.3f}, {fl_z + 0.136:.3f}])")
+            print(f"FR_relative = np.array([{fr_x - 0.175:.3f}, {fr_y + 0.384:.3f}, {fr_z + 0.142:.3f}])")
+            print(f"BL_relative = np.array([{bl_x + 0.237:.3f}, {bl_y - 0.386:.3f}, {bl_z + 0.139:.3f}])")
+            print(f"BR_relative = np.array([{br_x + 0.202:.3f}, {br_y + 0.382:.3f}, {br_z + 0.143:.3f}])")
+        
+        last_print_state = print_state
+        
+        yield False  # Return control to main loop
