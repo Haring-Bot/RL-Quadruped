@@ -457,13 +457,13 @@ class GaitController:
         offsetBR = np.array([-0.202, -0.382, -0.143])
 
         if legName == "FL":
-            goalPos = goalPos# + offsetFL
+            goalPos = goalPos + offsetFL
         elif legName == "FR":
-            goalPos = goalPos# + offsetFR
+            goalPos = goalPos + offsetFR
         elif legName == "BL":
-            goalPos = goalPos #+ offsetBL
+            goalPos = goalPos + offsetBL
         elif legName == "BR":
-            goalPos = goalPos #+ offsetBR
+            goalPos = goalPos + offsetBR
 
         for progress in range(duration):
             percentage = progress / duration
@@ -511,10 +511,10 @@ def updatePhase(self):
 def crawlGait(gaitController):
     # Define phase goals
     phase_goals = {
-        0: np.array([0.1, 0, 0]),      # Forward swing
-        1: np.array([0, 0, 0.1]),       # Neutral stance
-        2: np.array([-0.1, 0, 0.1]),    # Backward push
-        3: np.array([0, 0, 0.1])        # Neutral stance
+        0: np.array([-0.153, -0.067, 0.236]),      # backwards UP
+        1: np.array([0.173, -0.067, 0.236]),       # forward UP
+        2: np.array([0.173, -0.067, 0.070]),    # forward DOWN
+        3: np.array([-0.153, -0.067, 0.070])        # backward DOWN
     }
     
     # Create a walker (generator) for each leg
@@ -616,7 +616,7 @@ def startSimulation(config):
     #Run simulation with PD control
     try:
         for i in range(100000):
-            walkingMode = "seq"
+            walkingMode = "gait"
             if walkingMode == "gait":
                 if walker is None:
                    walker = crawlGait(gaitController)
