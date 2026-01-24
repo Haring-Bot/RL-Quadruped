@@ -429,9 +429,9 @@ class GaitController:
     def calculateLegPosition(self, progress, startPos, endPos):
         curGoalPos = startPos + progress *(endPos - startPos) #calculates the neccessary position to achieve movement within duration
 
-        zOffset = self.gaitHeight * np.sin(progress * np.pi)    #parabolic offset to allow "stepping" motion
+        # zOffset = self.gaitHeight * np.sin(progress * np.pi)    #parabolic offset to allow "stepping" motion
 
-        curGoalPos[2] += zOffset
+        # curGoalPos[2] += zOffset
 
         return curGoalPos
     
@@ -473,11 +473,16 @@ class GaitController:
         yield True
 
     def sequentialWalk(self, speed):
-        fwdGoal = np.array([0.242, 0.246, -0.01])      # Forward swing
-        ntrlGoal = np.array([0.1, 0, 0.2])     # Neutral stance  
-        bkwdGoal = np.array([0.05, 0.246, -0.01])  # Backward push
+        bkwduGoal = np.array([0.0, 0.32, 0.1])
+        fwduGoal = np.array([0.326, 0.32, 0.1])
+        fwdGoal = np.array([0.326, 0.32, -0.066])      # Forward swing
+        bkwdGoal = np.array([0.0, 0.32, -0.066])  # Backward push
         
         while True:  # Loop forever
+            print("bkwdU")
+            yield from self.executeWalk("FL", bkwduGoal, speed)
+            print("fwdU")
+            yield from self.executeWalk("FL", fwduGoal, speed)
             print("fwd")
             yield from self.executeWalk("FL", fwdGoal, speed)
             print("bkwd")
@@ -659,11 +664,11 @@ def startSimulation(config):
             robot.updateJoints(kp=config["kp"], kd=config["kd"], max_force=config["maxForce"])
             sim.step(config["timeStep"])
 
-            if i % 300 == 0:
-                robot.printLegCoordinatesForIK("FL")
-                robot.printLegCoordinatesForIK("FR")
-                robot.printLegCoordinatesForIK("BL")
-                robot.printLegCoordinatesForIK("BR")
+            # if i % 300 == 0:
+            #     robot.printLegCoordinatesForIK("FL")
+            #     robot.printLegCoordinatesForIK("FR")
+            #     robot.printLegCoordinatesForIK("BL")
+            #     robot.printLegCoordinatesForIK("BR")
                 # robot.getLegPosition("FL", True) 
                 # robot.getLegPosition("FR", True) 
                 # robot.getLegPosition("BL", True)      
