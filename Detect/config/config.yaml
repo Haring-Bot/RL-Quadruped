@@ -1,0 +1,83 @@
+# Object Definitions
+objects:
+  sphere:
+      diameter: 0.15 
+      color: [0.0, 0.0, 1.0, 1.0]  # RGBA: Blue
+      urdf: "sphere2.urdf"
+      class_id: 1  
+  cube:
+     size: [0.20, 0.20, 0.20]
+     color: [1.0, 0.0, 0.0, 1.0]  # Red
+     urdf: "cube.urdf"
+     class_id: 0  
+  cylinder:
+    height: 0.16
+    radius: 0.06
+    color: [0.0, 1.0, 0.0, 1.0]  # RGBA: Green
+    urdf: "cylinder.urdf"
+    class_id: 2
+  
+  
+
+# Camera Configuration
+camera:
+  width: 640
+  height: 480
+  fov: 60             # Field of view in degrees
+  near: 0.1
+  far: 5.0
+  position: [0, -1.8, 0.6]    # Behind workspace, elevated
+  target: [0, 0, 0.4]          # Looking at table height
+  up: [0, 0, 1]                # Z-axis up
+
+# Detection Parameters
+detection:
+  model: "yolov8n.pt"  # Nano version for speed
+  confidence_threshold: 0.5
+  iou_threshold: 0.45  # For NMS
+  max_detections: 10
+ 
+  input_size: [640, 640]
+  normalize: true
+
+
+distance:
+  method: "depth_buffer"  
+  min_range: 0.3  # meters
+  max_range: 3.0  # meters (extended to handle edge cases)
+ 
+  max_depth_std: 0.2  
+
+# Position Calculation
+position:
+  coordinate_frame: "robot"  # Output in robot frame
+  ground_plane_height: 0.0  # Z-coordinate of ground
+
+
+data_generation:
+  num_images_per_class: 2000
+  distances: [0.8, 1.0, 1.2, 1.5, 1.8]  # Removed 0.5 (too close) and 2.0 (too far)
+  angles: [-15, -10, -5, 0, 5, 10, 15]  # Tighter angle spread
+  height_offsets: [-0.05, 0.0, 0.05, 0.10]  # Smaller vertical variation          
+  train_ratio: 0.8
+  val_ratio: 0.2
+
+
+spawning:
+  
+  distances: [0.8, 1.0, 1.2, 1.5, 1.8]
+  angles: [-15, -10, -5, 0, 5, 10, 15]
+  height_offsets: [-0.05, 0.0, 0.05, 0.10]        
+
+
+performance:
+  target_fps: 20
+  target_f1_score: 0.80
+  target_distance_error: 0.15  
+  target_position_error: 0.20  
+
+
+paths:
+  data_root: "data/"
+  models_dir: "data/models/"
+  logs_dir: "logs/"
