@@ -322,11 +322,11 @@ def startSimulation(config):
     
     
     path_mgr = PathManager(robot) #import functions for path planning
-    target = [2, 0,0]#[random.uniform(-10, 10), random.uniform(-10, 10), 0] #generate a target randomly, will have to be replace by coordinates of an object
+    target = [1, 2,0]#[random.uniform(-10, 10), random.uniform(-10, 10), 0] #generate a target randomly, will have to be replace by coordinates of an object
    
     #------ Box for testing, to remove --------
-    visual_id = p.createVisualShape(p.GEOM_BOX, halfExtents=[0.3, 1, 0.25], rgbaColor=[0.8, 0.1, 0.1, 1])
-    collision_id = p.createCollisionShape(p.GEOM_BOX, halfExtents=[0.3, 1, 0.25])
+    visual_id = p.createVisualShape(p.GEOM_BOX, halfExtents=[0.3, 0.25, 0.25], rgbaColor=[0.8, 0.1, 0.1, 1])
+    collision_id = p.createCollisionShape(p.GEOM_BOX, halfExtents=[0.3, 0.25, 0.25])
     p.createMultiBody(baseMass=0, baseCollisionShapeIndex=collision_id, 
                      baseVisualShapeIndex=visual_id, basePosition=[1, 0, 0.25])
     
