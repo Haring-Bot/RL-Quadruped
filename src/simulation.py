@@ -2,10 +2,33 @@ import pybullet as p
 import time
 import pybullet_data
 import os
+import sys
+import cv2
 import numpy as np
 import itertools
 
+from pathlib import Path
 from IK_solver import inverseKinematic, forwardKinematic
+from path_manager import PathManager
+
+#For the vision
+ROOT = Path(__file__).resolve().parent.parent
+DETECT_SRC = ROOT / "Detect" / "src"
+
+for p in [str(DETECT_SRC), str(ROOT)]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+try:
+    from Detect.src.vision_system import VisionSystem as vs
+except ImportError as e:
+    print(f"Erreur d'importation (vision system) : {e}")
+
+try:
+    from Detect.src.simulation.environment import RobotEnvironment
+    from Detect.src.simulation.camera import Camera
+except ImportError as e:
+    print(f"Erreur d'importation (simulation/camera) : {e}")
 
 
 class Plane:
@@ -601,6 +624,35 @@ def startSimulation(config):
     p.removeBody(robot_temp.id)
     robot = sim.add_robot(urdf_path, start_pos=config["startPos"], start_orientation=config["startOrientation"])
     
+    # ----- Vision -----
+    # Setup environment
+    env = RobotEnvironment(gui=True)
+    env.spawn_random_scene(num_each_type=1)
+
+    camera = Camera()
+    vision = vs(camera, model_path="weights/best.pt")
+
+    # Run detection
+    result = vision.detect_and_measure()
+            
+    # Get target coordinates for path planning
+    for detection in result['detections']:
+        target_x = detection['position'][0]  # X coordinate
+        target_y = detection['position'][1]  # Y coordinate
+        object_type = detection['class_name']
+    
+    print(f"{object_type} at [{target_x:.3f}, {target_y:.3f}]")
+
+    # ----- ----- ----- -----
+
+    # ----- Path planning -----
+    path_mgr = PathManager(robot) #import functions for path planning
+    if object_type =="cube": #look for a cube to plan a path to it
+        target = [target_x, target_y, 0]
+        path_mgr.plan_path(target) #planning the path with target and obstacle. This will have to be actualised in real time when we're moving in was of moving environement
+
+    # ------ ----- ----- -----
+
     robot.print_joint_positions()
     
     #Move into default position

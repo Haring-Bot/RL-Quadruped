@@ -102,14 +102,14 @@ class QuadrupedEnv(gym.Env):
         self.step_counter += 1
         
         # Blend actions for smoothness
-        alpha = 0.7
+        alpha = 0.99  # Changed from 0.98
         blended_action = alpha * self.previous_action + (1 - alpha) * action
         
         # Scale actions around the standing pose (not zero)
-        scaled_action = self.standing_pose + (blended_action * 0.4)  # Moderate action range
-        
+        scaled_action = self.standing_pose + (blended_action * 0.3)  # Keep at 0.3
+
         # Apply Control with stronger PD gains for stability
-        for _ in range(24):
+        for _ in range(24):  # Keep as is
             self.robot.set_all_joints_pd_control(scaled_action, kp=5.0, kd=1.0, max_force=30)
             self.sim.step()
         
@@ -151,19 +151,51 @@ class QuadrupedEnv(gym.Env):
 
         # 7. Smoothness - minimal
         action_diff = blended_action - self.previous_action
-        R_smooth = -0.1 * np.sum(action_diff ** 2)
+        R_smooth = -2000.0 * np.sum(action_diff ** 2)  # Changed from -500.0
 
         # 8. Joint velocity - minimal
         _, joint_vel = self.robot.get_joint_states()
-        R_joint_vel = -0.01 * np.sum(np.array(joint_vel) ** 2)
+        joint_pos, _ = self.robot.get_joint_states()
+        joint_pos_dev = np.sum(np.abs(np.array(joint_pos) - self.standing_pose))
+        avg_joint_vel = np.mean(np.abs(np.array(joint_vel)))
+        
+        # Reward large deviations from standing pose (long movements)
+        R_long_movements = 20.0 * np.clip(joint_pos_dev / 2.0, 0, 1)  # Changed from 5.0
+
+        # But heavily penalize if done too fast
+        R_joint_vel = -200.0 * avg_joint_vel  # Changed from -50.0
 
         # 9. Alive bonus
         R_alive = 1.0
 
+        # Reward coordinated, slow leg movements
+        R_spider_gait = 100.0 * np.exp(-50.0 * avg_joint_vel)  # Changed from 20.0
+
+        # Get hip joints specifically (every 3rd joint: 0, 3, 6, 9)
+        hip_indices = [0, 3, 6, 9]
+        hip_positions = [joint_pos[i] for i in hip_indices]
+        hip_velocities = [joint_vel[i] for i in hip_indices]
+
+        # Reward large hip deviations (long hip movements)
+        hip_pos_dev = np.sum(np.abs(np.array(hip_positions)))
+        R_long_hip_movements = 200.0 * np.clip(hip_pos_dev / 1.0, 0, 1)  # Changed from 50.0
+
+        # EXTREME penalty for fast hip movement
+        avg_hip_vel = np.mean(np.abs(np.array(hip_velocities)))
+        R_hip_vel = -2000.0 * avg_hip_vel  # Changed from -500.0
+
+        # Moderate penalty for other joints (allow them to move faster)
+        non_hip_velocities = [joint_vel[i] for i in range(12) if i not in hip_indices]
+        avg_non_hip_vel = np.mean(np.abs(np.array(non_hip_velocities)))
+        R_other_joint_vel = -10.0 * avg_non_hip_vel  # Changed from -50.0
+
+        # Huge reward for slow hip movement specifically
+        R_slow_hip = 500.0 * np.exp(-200.0 * avg_hip_vel)  # Changed from 200.0 and -100.0
+
         # Total reward - forward dominates everything
         reward = (R_forward_vel + R_lateral + R_yaw + R_yaw_rate + R_height + 
                   R_roll + R_pitch + R_energy + R_smooth + 
-                  R_joint_vel + R_alive)
+                  R_long_hip_movements + R_hip_vel + R_other_joint_vel + R_slow_hip + R_alive)
         
         self.previous_action = blended_action
 
@@ -225,7 +257,7 @@ if __name__ == "__main__":
         gamma=0.99                  #discount factor. How much long time rewards are worth. Higher value, longer planning
     )
 
-    lengthTraining = 20    #minutes
+    lengthTraining = 5    #minutes
     averageFPS = 1000
     totalTimesteps = lengthTraining * 60 * averageFPS
 
