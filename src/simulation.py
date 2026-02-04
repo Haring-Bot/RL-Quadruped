@@ -2,11 +2,33 @@ import pybullet as p
 import time
 import pybullet_data
 import os
+import sys
+import cv2
 import numpy as np
 import itertools
 
+from pathlib import Path
 from IK_solver import inverseKinematic, forwardKinematic
 from path_manager import PathManager
+
+#For the vision
+ROOT = Path(__file__).resolve().parent.parent
+DETECT_SRC = ROOT / "Detect" / "src"
+
+for p in [str(DETECT_SRC), str(ROOT)]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+try:
+    from Detect.src.vision_system import VisionSystem as vs
+except ImportError as e:
+    print(f"Erreur d'importation (vision system) : {e}")
+
+try:
+    from Detect.src.simulation.environment import RobotEnvironment
+    from Detect.src.simulation.camera import Camera
+except ImportError as e:
+    print(f"Erreur d'importation (simulation/camera) : {e}")
 
 
 class Plane:
@@ -594,7 +616,26 @@ def startSimulation(config):
     p.removeBody(robot_temp.id)
     robot = sim.add_robot(urdf_path, start_pos=config["startPos"], start_orientation=config["startOrientation"])
     
-    
+    # ----- Vision -----
+    # Setup environment
+    env = RobotEnvironment(gui=True)
+    env.spawn_random_scene(num_each_type=1)
+
+    camera = Camera()
+    vision = vs(camera)
+
+    # Run detection
+    result = vision.detect_and_measure()
+            
+    # Print results
+    if result['num_detections'] > 0:
+        vision.print_detections(result['detections'])
+
+    vis_image = vision.visualize(result)
+    cv2.imshow("Vision System", cv2.cvtColor(vis_image, cv2.COLOR_RGB2BGR))
+
+    # ----- ----- ----- -----
+
     # ----- Path planning -----
     path_mgr = PathManager(robot) #import functions for path planning
     target = [1, 2,0] #fixed target, to replace by coordinates
