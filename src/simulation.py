@@ -372,7 +372,7 @@ class Simulation:
     
     def step(self, time_step=1./240.):
         p.stepSimulation()
-        time.sleep(time_step)
+        #time.sleep(time_step) commented out for training. FOr simulation comment back
     
     def run(self, num_steps=10000, time_step=1./240.):
         print("Running simulation...")
@@ -400,9 +400,9 @@ class GaitController:
         self.gaitDuration = duration
 
         self.phaseFL = 0
-        self.phaseBR = 1
-        self.phaseFR = 2
-        self.phaseBL = 3
+        self.phaseBR = 2  
+        self.phaseFR = 4
+        self.phaseBL = 6
 
         self.goalFL = [0, 0, 0]
         self.goalBR = [0, 0, 0]
@@ -421,10 +421,10 @@ class GaitController:
     
     def updateAllPhases(self):
         """Update all leg phases simultaneously"""
-        self.phaseFL = (self.phaseFL + 1) % 4
-        self.phaseBR = (self.phaseBR + 1) % 4
-        self.phaseFR = (self.phaseFR + 1) % 4
-        self.phaseBL = (self.phaseBL + 1) % 4
+        self.phaseFL = (self.phaseFL + 1) % 8
+        self.phaseBR = (self.phaseBR + 1) % 8
+        self.phaseFR = (self.phaseFR + 1) % 8
+        self.phaseBL = (self.phaseBL + 1) % 8
 
     def calculateLegPosition(self, progress, startPos, endPos):
         curGoalPos = startPos + progress *(endPos - startPos) #calculates the neccessary position to achieve movement within duration
@@ -509,12 +509,15 @@ def updatePhase(self):
     self.phaseBL = curPhase + 3
 
 def crawlGait(gaitController):
-    # Define phase goals
     phase_goals = {
-        0: np.array([-0.153, -0.067, 0.236]),      # backwards UP
-        1: np.array([0.173, -0.067, 0.236]),       # forward UP
-        2: np.array([0.173, -0.067, 0.070]),    # forward DOWN
-        3: np.array([-0.153, -0.067, 0.070])        # backward DOWN
+        0: np.array([-0.153, -0.067, 0.236]),   # Lift
+        1: np.array([0.173, -0.067, 0.236]),    # Swing
+        2: np.array([0.173, -0.067, 0.070]),    # Push back
+        3: np.array([0.0, -0.067, 0.070]),      # Push back
+        4: np.array([-0.153, -0.067, 0.070]),   # Push back
+        5: np.array([-0.153, -0.067, 0.070]),   # Push back
+        6: np.array([-0.153, -0.067, 0.070]),   # Push back
+        7: np.array([-0.153, -0.067, 0.070])    # Push back
     }
     
     # Create a walker (generator) for each leg
