@@ -622,25 +622,26 @@ def startSimulation(config):
     env.spawn_random_scene(num_each_type=1)
 
     camera = Camera()
-    vision = vs(camera)
+    vision = vs(camera, model_path="weights/best.pt")
 
     # Run detection
     result = vision.detect_and_measure()
             
-    # Print results
-    if result['num_detections'] > 0:
-        vision.print_detections(result['detections'])
-
-    vis_image = vision.visualize(result)
-    cv2.imshow("Vision System", cv2.cvtColor(vis_image, cv2.COLOR_RGB2BGR))
+    # Get target coordinates for path planning
+    for detection in result['detections']:
+        target_x = detection['position'][0]  # X coordinate
+        target_y = detection['position'][1]  # Y coordinate
+        object_type = detection['class_name']
+    
+    print(f"{object_type} at [{target_x:.3f}, {target_y:.3f}]")
 
     # ----- ----- ----- -----
 
     # ----- Path planning -----
     path_mgr = PathManager(robot) #import functions for path planning
-    target = [1, 2,0] #fixed target, to replace by coordinates
-
-    path_mgr.plan_path(target) #planning the path with target and obstacle. This will have to be actualised in real time when we're moving in was of moving environement
+    if object_type =="cube": #look for a cube to plan a path to it
+        target = [target_x, target_y, 0]
+        path_mgr.plan_path(target) #planning the path with target and obstacle. This will have to be actualised in real time when we're moving in was of moving environement
 
     # ------ ----- ----- -----
 
